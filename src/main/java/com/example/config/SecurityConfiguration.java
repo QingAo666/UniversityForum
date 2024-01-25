@@ -1,6 +1,9 @@
 package com.example.config;
 
 import com.example.entity.RestBean;
+import com.example.entity.vo.response.AuthorizeVo;
+import com.example.utils.JwtUtils;
+import jakarta.annotation.Resource;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -12,15 +15,17 @@ import org.springframework.security.config.annotation.web.configurers.AbstractHt
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
+import org.springframework.security.core.userdetails.User;
 import org.springframework.security.web.SecurityFilterChain;
-import org.springframework.security.web.authentication.AuthenticationFailureHandler;
-import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
-import org.springframework.security.web.authentication.logout.LogoutSuccessHandler;
+
 
 import java.io.IOException;
 
 @Configuration
 public class SecurityConfiguration {
+
+    @Resource
+    JwtUtils jwtUtils;
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
@@ -50,7 +55,14 @@ public class SecurityConfiguration {
                                         HttpServletResponse response,
                                         Authentication authentication) throws IOException, ServletException {
         response.setContentType("application/json;charset=utf-8");
-        response.getWriter().write(RestBean.success().asJsonString());
+        User user = (User) authentication.getPrincipal();
+        String token = jwtUtils.createJwt(user,1,"小明");//创建一个基于当前登录用户的jwt令牌
+        AuthorizeVo vo = new AuthorizeVo();
+        vo.setUsername("小明");
+        vo.setRole("");
+        vo.setDate(jwtUtils.expireTime());
+        vo.setToken(token);
+        response.getWriter().write(RestBean.success(vo).asJsonString());
 
     }
     public void onAuthenticationFailure(HttpServletRequest request,
