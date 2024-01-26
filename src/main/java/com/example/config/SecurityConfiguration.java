@@ -1,8 +1,10 @@
 package com.example.config;
 
 import com.example.entity.RestBean;
+import com.example.entity.dto.Account;
 import com.example.entity.vo.response.AuthorizeVo;
 import com.example.filter.JwtAuthorizeFilter;
+import com.example.service.AccountService;
 import com.example.utils.JwtUtils;
 import jakarta.annotation.Resource;
 import jakarta.servlet.ServletException;
@@ -35,6 +37,9 @@ public class SecurityConfiguration {
     @Resource
     JwtAuthorizeFilter filter;
 
+    @Resource
+    AccountService service;
+
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         return http
@@ -46,20 +51,22 @@ public class SecurityConfiguration {
                         .loginProcessingUrl("/api/auth/login")
                         .successHandler(this::onAuthenticationSuccess)
                         .failureHandler(this::onAuthenticationFailure)
+                        .permitAll()
                 )
                 .logout(conf->conf
                         .logoutUrl("/api/auth/logout")
                         .logoutSuccessHandler(this::onLogoutSuccess)
                 )
                 .csrf(AbstractHttpConfigurer::disable)
-                .sessionManagement(conf->conf
-                        .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
-                )
-                .addFilterBefore(filter, UsernamePasswordAuthenticationFilter.class)//把过滤链添加上
                 .exceptionHandling(conf->conf
                         .authenticationEntryPoint(this::onUnauthorized)//未验证jwt或验证失败
                         .accessDeniedHandler(this::onAccessDeny)//权限不够
                 )
+                .sessionManagement(conf->conf
+                        .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+                )
+                .addFilterBefore(filter, UsernamePasswordAuthenticationFilter.class)//把过滤链添加上
+
                 .build();
 
     }
@@ -70,10 +77,11 @@ public class SecurityConfiguration {
                                         Authentication authentication) throws IOException, ServletException {
         response.setContentType("application/json;charset=utf-8");
         User user = (User) authentication.getPrincipal();
-        String token = jwtUtils.createJwt(user,1,"小明");//创建一个基于当前登录用户的jwt令牌
+        Account account = service.findAccountByNameOrEmail(user.getUsername());
+        String token = jwtUtils.createJwt(user,account.getId(),account.getUsername());//创建一个基于当前登录用户的jwt令牌
         AuthorizeVo vo = new AuthorizeVo();
-        vo.setUsername("小明");
-        vo.setRole("");
+        vo.setUsername(account.getUsername());
+        vo.setRole(account.getRole());
         vo.setDate(jwtUtils.expireTime());
         vo.setToken(token);
         response.getWriter().write(RestBean.success(vo).asJsonString());
