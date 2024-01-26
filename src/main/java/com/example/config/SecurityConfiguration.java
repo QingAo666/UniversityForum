@@ -24,6 +24,7 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 
 
 import java.io.IOException;
+import java.io.PrintWriter;
 
 @Configuration
 public class SecurityConfiguration {
@@ -47,6 +48,7 @@ public class SecurityConfiguration {
                         .failureHandler(this::onAuthenticationFailure)
                 )
                 .logout(conf->conf
+                        .logoutUrl("/api/auth/logout")
                         .logoutSuccessHandler(this::onLogoutSuccess)
                 )
                 .csrf(AbstractHttpConfigurer::disable)
@@ -77,19 +79,29 @@ public class SecurityConfiguration {
         response.getWriter().write(RestBean.success(vo).asJsonString());
 
     }
+
+    //退出登录(同时需要把jwt列入黑名单)
+    public void onLogoutSuccess(HttpServletRequest request,
+                                HttpServletResponse response,
+                                Authentication authentication) throws IOException, ServletException {
+        response.setContentType("application/json;charset=utf-8");
+        PrintWriter writer = response.getWriter();
+        String authorization = request.getHeader("Authorization");//注意!!!
+        //判断是否成功使jwt失效
+        if(jwtUtils.inValidateJwt(authorization)){
+            writer.write(RestBean.success().asJsonString());
+        }else{
+            writer.write(RestBean.failure(400,"退出登录失败").asJsonString());
+        }
+
+    }
+
     //登录失败
     public void onAuthenticationFailure(HttpServletRequest request,
                                         HttpServletResponse response,
                                         AuthenticationException exception) throws IOException, ServletException {
         response.setContentType("application/json;charset=utf-8");
         response.getWriter().write(RestBean.unAuthorized(exception.getMessage()).asJsonString());
-    }
-
-    //退出登录(同时需要把jwt列入黑名单)
-    public void onLogoutSuccess(HttpServletRequest request,
-                                HttpServletResponse response,
-                                Authentication authentication) throws IOException, ServletException {
-
     }
 
     //未验证jwt或验证失败

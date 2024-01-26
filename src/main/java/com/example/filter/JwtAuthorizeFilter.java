@@ -39,7 +39,7 @@ public class JwtAuthorizeFilter extends OncePerRequestFilter {
             //SecurityContextHolder用于管理当前用户的安全上下文信息，包括认证信息、授权信息等。
             SecurityContextHolder.getContext().setAuthentication(authenticationToken);
             //业务常用
-            request.setAttribute("id",jwtUtils.toInt(jwt));
+            //request.setAttribute("id",jwtUtils.toInt(jwt));
         }
         filterChain.doFilter(request,response);
     }

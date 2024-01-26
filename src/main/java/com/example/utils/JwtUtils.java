@@ -6,7 +6,10 @@ import com.auth0.jwt.algorithms.Algorithm;
 import com.auth0.jwt.exceptions.JWTVerificationException;
 import com.auth0.jwt.interfaces.Claim;
 import com.auth0.jwt.interfaces.DecodedJWT;
+import jakarta.annotation.Resource;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.data.redis.core.TimeoutUtils;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -14,6 +17,8 @@ import org.springframework.stereotype.Component;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 
 @Component
 public class JwtUtils {
@@ -24,10 +29,51 @@ public class JwtUtils {
     @Value("${spring.security.jwt.expire}")
     int expire;
 
+    @Resource
+    StringRedisTemplate template;
+
+    //使jwt失效
+    public boolean inValidateJwt(String headerToken){
+        String token = this.convertToken(headerToken);
+        if (token == null) return false;
+        //验证令牌
+        Algorithm algorithm = Algorithm.HMAC256(key);
+        JWTVerifier jwtVerifier = JWT.require(algorithm).build();//创建验证对象
+        try{
+            DecodedJWT verify = jwtVerifier.verify(token);
+            String id = verify.getId();//取出独有的uuid
+            return deletedToken(id,verify.getExpiresAt());
+        }catch (JWTVerificationException e){
+            return false;
+        }
+    }
+
+    //删除Token
+    private boolean deletedToken(String uuid,Date time){
+        //判断是否已经失效，失效后就不用继续删除加入黑名单了
+        if(this.isInvalidToken(uuid))
+            return false;
+        //判断令牌时间是否过期
+        Date now = new Date();
+        long expire = Math.max(time.getTime() - now.getTime(),0);
+        //存进黑名单
+        template.opsForValue().set(Const.JWT_BLACK_LIST+uuid,"",expire, TimeUnit.MILLISECONDS);
+        return true;
+    }
+
+    //判断当前Token是否失效(是否在黑名单中)
+    private boolean isInvalidToken(String uuid){
+        return Boolean.TRUE.equals(template.hasKey(Const.JWT_BLACK_LIST + uuid));
+    }
+
+
+
+
     public String createJwt(UserDetails details,int id,String username){
         Algorithm algorithm = Algorithm.HMAC256(key);
         Date expired = this.expireTime();
         return JWT.create()
+                .withJWTId(UUID.randomUUID().toString())//每个jwt都携带一个独有的id
                 .withClaim("id",id)
                 .withClaim("name",username)
                 .withClaim("authorities",details.getAuthorities().stream().map(GrantedAuthority::getAuthority).toList())
@@ -45,6 +91,9 @@ public class JwtUtils {
         JWTVerifier jwtVerifier = JWT.require(algorithm).build();//创建验证对象
         try{
             DecodedJWT verify = jwtVerifier.verify(token);//验证Token
+            //验证是否失效
+            if(this.isInvalidToken(verify.getId()))
+                return null;
             //验证令牌是否过期
             Date expiresAt = verify.getExpiresAt();//获取令牌过期时间
             return new Date().after(expiresAt) ? null : verify;
