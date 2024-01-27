@@ -8,6 +8,6 @@ public class AuthorizeVo {
     String username;
     String role;
     String token;//存放jwt令牌
-    Date date;
+    Date expire;
 
 }

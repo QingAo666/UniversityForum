@@ -10,6 +10,7 @@ import jakarta.annotation.Resource;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.springframework.beans.BeanUtils;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.access.AccessDeniedException;
@@ -79,11 +80,12 @@ public class SecurityConfiguration {
         User user = (User) authentication.getPrincipal();
         Account account = service.findAccountByNameOrEmail(user.getUsername());
         String token = jwtUtils.createJwt(user,account.getId(),account.getUsername());//创建一个基于当前登录用户的jwt令牌
-        AuthorizeVo vo = new AuthorizeVo();
-        vo.setUsername(account.getUsername());
-        vo.setRole(account.getRole());
-        vo.setDate(jwtUtils.expireTime());
-        vo.setToken(token);
+        //BeanUtils.copyProperties(account,vo);对象转换
+        //手动实现如下:
+        AuthorizeVo vo = account.asViewObject(AuthorizeVo.class,v->{
+            v.setExpire(jwtUtils.expireTime());
+            v.setToken(token);
+        });
         response.getWriter().write(RestBean.success(vo).asJsonString());
 
     }
