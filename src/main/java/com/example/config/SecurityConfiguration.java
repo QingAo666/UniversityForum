@@ -52,17 +52,16 @@ public class SecurityConfiguration {
                         .loginProcessingUrl("/api/auth/login")
                         .successHandler(this::onAuthenticationSuccess)
                         .failureHandler(this::onAuthenticationFailure)
-                        .permitAll()
                 )
                 .logout(conf->conf
                         .logoutUrl("/api/auth/logout")
                         .logoutSuccessHandler(this::onLogoutSuccess)
                 )
-                .csrf(AbstractHttpConfigurer::disable)
                 .exceptionHandling(conf->conf
                         .authenticationEntryPoint(this::onUnauthorized)//未验证jwt或验证失败
                         .accessDeniedHandler(this::onAccessDeny)//权限不够
                 )
+                .csrf(AbstractHttpConfigurer::disable)
                 .sessionManagement(conf->conf
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
                 )
@@ -77,6 +76,7 @@ public class SecurityConfiguration {
                                         HttpServletResponse response,
                                         Authentication authentication) throws IOException, ServletException {
         response.setContentType("application/json;charset=utf-8");
+        //取出验证成功登录的用户
         User user = (User) authentication.getPrincipal();
         Account account = service.findAccountByNameOrEmail(user.getUsername());
         String token = jwtUtils.createJwt(user,account.getId(),account.getUsername());//创建一个基于当前登录用户的jwt令牌

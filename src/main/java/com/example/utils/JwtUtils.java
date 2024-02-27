@@ -32,7 +32,7 @@ public class JwtUtils {
     @Resource
     StringRedisTemplate template;
 
-    //使jwt失效
+    //使token失效
     public boolean inValidateJwt(String headerToken){
         String token = this.convertToken(headerToken);
         if (token == null) return false;
@@ -40,7 +40,7 @@ public class JwtUtils {
         Algorithm algorithm = Algorithm.HMAC256(key);
         JWTVerifier jwtVerifier = JWT.require(algorithm).build();//创建验证对象
         try{
-            DecodedJWT verify = jwtVerifier.verify(token);
+            DecodedJWT verify = jwtVerifier.verify(token);//生成jwt对象
             String id = verify.getId();//取出独有的uuid
             return deletedToken(id,verify.getExpiresAt());
         }catch (JWTVerificationException e){
@@ -90,7 +90,7 @@ public class JwtUtils {
         Algorithm algorithm = Algorithm.HMAC256(key);
         JWTVerifier jwtVerifier = JWT.require(algorithm).build();//创建验证对象
         try{
-            DecodedJWT verify = jwtVerifier.verify(token);//验证Token
+            DecodedJWT verify = jwtVerifier.verify(token);//验证Token对象
             //验证是否失效
             if(this.isInvalidToken(verify.getId()))
                 return null;

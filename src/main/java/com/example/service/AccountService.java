@@ -8,4 +8,6 @@ import org.springframework.stereotype.Service;
 @Service
 public interface AccountService extends IService<Account>, UserDetailsService {
     Account findAccountByNameOrEmail(String text);
+
+    String registerEmailVerifyCode(String type,String email,String ip);
 }
