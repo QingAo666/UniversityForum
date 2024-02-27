@@ -1,0 +1,43 @@
+//配置路由 实现单页面登录
+import {createRouter, createWebHistory} from "vue-router";
+import {unauthorized} from "@/net/index.js";
+
+//1.安装路由
+//2.配置路由
+
+const router = createRouter({
+    history:createWebHistory(import.meta.env.BASE_URL),
+    routes:[
+        {
+            path: '/',
+            name: 'welcome',
+            component: () => import('@/views/WelcomeView.vue'),
+            children: [
+                {
+                    path: '',
+                    name: 'welcome-login',
+                    component: () => import('@/views/welcome/LoginPage.vue')
+                }
+            ]
+        },
+        {
+            path: '/index',
+            name: 'index',
+            component: () => import('@/views/IndexView.vue')
+        }
+    ]
+})
+
+router.beforeEach((to,from,next)=>{
+    const isUnauthorized = unauthorized()
+    if(to.name.startsWith('welcome-') && !isUnauthorized){
+        next('/index')
+    }else if(to.fullPath.startsWith('/index') && isUnauthorized){
+        next('/')
+    }else{
+        next()
+    }
+
+})
+
+export default router
