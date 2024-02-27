@@ -1,7 +1,9 @@
 package com.example.service.impl;
 
+import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.example.entity.dto.Account;
+import com.example.entity.vo.request.EmailRegisterVo;
 import com.example.mapper.AccountMapper;
 import com.example.service.AccountService;
 import com.example.utils.Const;
@@ -13,8 +15,10 @@ import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
@@ -31,6 +35,9 @@ public class AccountServiceImpl extends ServiceImpl<AccountMapper, Account> impl
 
     @Resource
     StringRedisTemplate stringRedisTemplate;
+
+    @Resource
+    PasswordEncoder encoder;
 
     //当有用户登陆时，spring security会调用loadUserByUsername方法，并把用户输入的账号传进来,但是并不传密码，
     // 因为这个方法不会做用户名和密码的校验，该方法只是根据用户名从数据库中查出来用户的信息，
@@ -73,10 +80,41 @@ public class AccountServiceImpl extends ServiceImpl<AccountMapper, Account> impl
         }
     }
 
+    @Override
+    public String registerEmailAccount(EmailRegisterVo vo) {
+        String email = vo.getEmail();
+        String username = vo.getUsername();
+        String key = Const.VERIFY_EMAIL_DATA+email;
+        String code = stringRedisTemplate.opsForValue().get(key);
+        if(code == null) return "请先获取验证码";
+        if(!code.equals(vo.getCode())) return "验证码输入错误，请重新输入";
+        if(this.existsAccountByEmail(email)) return "此电子邮件已被其它用户注册";
+        if(this.existsAccountByUserName(username)) return "此用户名已被其他人注册，请更换一个新的用户名";
+        String password = encoder.encode(vo.getPassword());
+        Account account = new Account(null,username,password,email,code,new Date());
+        if(this.save(account)){
+            //注册用户成功后，redis中存的验证码也不需要存储了
+            stringRedisTemplate.delete(key);
+            return null;
+        }else{
+         return "内部错误，请联系管理员";
+        }
+    }
+
+    private boolean existsAccountByEmail(String email){
+        return this.baseMapper.exists(Wrappers.<Account>query().eq("email",email));
+    }
+    private boolean existsAccountByUserName(String username){
+        return this.baseMapper.exists(Wrappers.<Account>query().eq("username",username));
+    }
+
+
     //是否在限制时间内
     private boolean verifyLimit(String ip){
         String key = Const.VERIFY_EMAIL_LIMIT+ip;
         return flowUtils.limitOnceCheck(key,60);
     }
+
+
 
 }
