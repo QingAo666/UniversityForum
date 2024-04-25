@@ -121,7 +121,7 @@ public class SecurityConfiguration {
         response.setContentType("application/json;charset=utf-8");
         response.getWriter().write(RestBean.unAuthorized(exception.getMessage()).asJsonString());
     }
-
+    //访问被拒绝时
     public void onAccessDeny(HttpServletRequest request,
                              HttpServletResponse response,
                              AccessDeniedException exception) throws IOException, ServletException {

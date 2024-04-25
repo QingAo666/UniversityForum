@@ -7,4 +7,10 @@ public class Const {
     public static final String VERIFY_EMAIL_DATA = "verify:email:data:";
 
     public static final int ORDER_CORS = -102;
+    public static final int ORDER_LIMIT = -101;
+
+    public static final String Flow_LIMIT_COUNTER= "flow:counter:";
+    public static final String  Flow_LIMIT_BLOCK = "flow:block:";
+
+    public static final String ATTR_USER_ID = "user:id:";
 }

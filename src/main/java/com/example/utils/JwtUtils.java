@@ -32,7 +32,7 @@ public class JwtUtils {
     @Resource
     StringRedisTemplate template;
 
-    //使token失效
+    //使jwt失效
     public boolean inValidateJwt(String headerToken){
         String token = this.convertToken(headerToken);
         if (token == null) return false;
@@ -42,21 +42,21 @@ public class JwtUtils {
         try{
             DecodedJWT verify = jwtVerifier.verify(token);//生成jwt对象
             String id = verify.getId();//取出独有的uuid
-            return deletedToken(id,verify.getExpiresAt());
+            return deletedJwt(id,verify.getExpiresAt());
         }catch (JWTVerificationException e){
             return false;
         }
     }
 
-    //删除Token
-    private boolean deletedToken(String uuid,Date time){
+    //删除jwt
+    private boolean deletedJwt(String uuid,Date time){
         //判断是否已经失效，失效后就不用继续删除加入黑名单了
         if(this.isInvalidToken(uuid))
             return false;
         //判断令牌时间是否过期
         Date now = new Date();
         long expire = Math.max(time.getTime() - now.getTime(),0);
-        //存进黑名单
+        //存进黑名单(黑名单存在了redis中)
         template.opsForValue().set(Const.JWT_BLACK_LIST+uuid,"",expire, TimeUnit.MILLISECONDS);
         return true;
     }
