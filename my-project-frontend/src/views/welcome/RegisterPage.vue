@@ -5,7 +5,7 @@ import router from "@/router/index.js";
 import {ElMessage} from "element-plus";
 import {get, login, post} from "@/net/index.js";
 
-const coldTime = ref(0)
+
 const formRef = ref()
 
 const form = reactive({
@@ -39,14 +39,16 @@ const validatePassword = (rule,value,callback) =>{
 //blur 失去焦点时进行验证 change 当值发生变化时进行验证
 const rule = {
   username:[
-    { required:true, validator:validateUsername,trigger:['blur','change'] }
+    { required:true, validator:validateUsername,trigger:['blur','change'] },
+    { min: 2, max: 10, message: '用户名的长度必须在2-10个字符之间', trigger: ['blur', 'change'] }
   ],
   password:[
     { required:true, message:'请输入密码', trigger:'blur'},
     { min:6, max:20, message:'密码的长度必须在6-20个字符之间',trigger: 'blur' }
   ],
   repeat_password:[
-    { required:true, validator:validatePassword, trigger:['blur','change'] }
+    { required:true, validator:validatePassword, trigger:['blur','change'] },
+
   ],
   email:[
     { required:true, message:'请输入邮件地址', trigger:'blur' },
@@ -58,6 +60,8 @@ const rule = {
 }
 
 let interval = null
+const coldTime = ref(0)
+const isEmailValid = computed(()=>/^[\w.-]+@[\w.-]+\.\w+$/.test(form.email))
 function askCode(){
   if(isEmailValid){
     coldTime.value = 60
@@ -74,7 +78,6 @@ function askCode(){
     ElMessage.warning('请输入正确的电子邮件!')
   }
 }
-const isEmailValid = computed(()=>/^[\w.-]+@[\w.-]+\.\w+$/.test(form.email))
 
 function register(){
   formRef.value.validate((valid) =>{
