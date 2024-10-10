@@ -2,9 +2,7 @@ package com.example.service;
 
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.example.entity.dto.Account;
-import com.example.entity.vo.request.ConfirmResetVo;
-import com.example.entity.vo.request.EmailRegisterVo;
-import com.example.entity.vo.request.EmailRestVo;
+import com.example.entity.vo.request.*;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.stereotype.Service;
 
@@ -20,4 +18,9 @@ public interface AccountService extends IService<Account>, UserDetailsService {
     String resetEmailAccountPassword(EmailRestVo vo);
 
     Account findAccountById(int id);
+
+    String modifyEmail(int id, ModifyEmailVo vo);
+
+    String changePassword(int id, ChangePasswordVo vo);
+
 }

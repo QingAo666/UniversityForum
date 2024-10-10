@@ -45,7 +45,10 @@ public class SecurityConfiguration {
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         return http
                 .authorizeHttpRequests(conf-> conf
+                        //路径匹配
                         .requestMatchers("/api/auth/**","/error").permitAll()
+                        .requestMatchers("swagger-ui/**","/v3/api-docs/**").permitAll()
+                        .requestMatchers("/images/**").permitAll()
                         .anyRequest().authenticated()
                 )
                 .formLogin(conf->conf

@@ -20,4 +20,17 @@ spring:
     driver-class-name: com.mysql.cj.jdbc.Driver
     username: root
     password: wca123...
+  minio:
+    endpoint: 'http://127.0.0.1:9006'
+    username: 'wca'
+    password: 'wca123...'
+  weather:
+    key: 3f672cc9976f4e6b9cc57ea3de78d1ba
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 10MB
+
+
+
 

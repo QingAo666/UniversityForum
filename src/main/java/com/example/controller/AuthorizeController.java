@@ -6,6 +6,7 @@ import com.example.entity.vo.request.EmailRegisterVo;
 import com.example.entity.vo.request.EmailRestVo;
 import com.example.service.AccountService;
 import com.example.utils.Const;
+import com.example.utils.ControllerUtils;
 import jakarta.annotation.Resource;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
@@ -24,38 +25,34 @@ public class AuthorizeController {
     @Resource
     AccountService service;
 
+    @Resource
+    ControllerUtils utils;
+
     @GetMapping("ask-code")
     public RestBean<Void> askVerifyCode(@RequestParam @Email String email,
-                                        @RequestParam @Pattern(regexp = "(register|reset)") String type,
+                                        @RequestParam @Pattern(regexp = "(register|reset|modify)") String type,
                                         HttpServletRequest request){
-        return this.messageHandle(()->
+        return utils.messageHandle(()->
             service.registerEmailVerifyCode(type,email,request.getRemoteAddr()));
     }
     //get请求用requestParam
     //post请求用requestBody
     @PostMapping("/register")
     public RestBean<Void> register(@RequestBody @Valid EmailRegisterVo vo){
-        return this.messageHandle(()->service.registerEmailAccount(vo));
+        return utils.messageHandle(()->service.registerEmailAccount(vo));
 
     }
 
     @PostMapping("/reset-confirm")
     public RestBean<Void> resetConfirm(@RequestBody @Valid ConfirmResetVo vo){
-        return this.messageHandle(()->service.resetConfirm(vo));
+        return utils.messageHandle(()->service.resetConfirm(vo));
 
     }
 
     @PostMapping("/reset-password")
     public RestBean<Void> resetPassword(@RequestBody @Valid EmailRestVo vo){
-        return this.messageHandle(()->service.resetEmailAccountPassword(vo));
+        return utils.messageHandle(()->service.resetEmailAccountPassword(vo));
 
     }
-
-
-    private RestBean<Void> messageHandle(Supplier<String> action){
-        String message = action.get();
-        return message == null ? RestBean.success() : RestBean.failure(400,message);
-    }
-
 
 }
